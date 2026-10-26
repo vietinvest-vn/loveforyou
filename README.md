@@ -51,7 +51,9 @@ npm test
 
 ## Triển khai
 
-Cấu hình `NODE_ENV=production`, `CLIENT_ORIGIN` bằng chính xác origin frontend (ví dụ `https://loveforyoutest.vercel.app`), `MONGODB_URI`, `MONGODB_DB_NAME` và `PORT` trên Render. Trên Vercel, đặt biến build `VITE_API_URL` bằng origin backend (ví dụ `https://loveforyoutest.onrender.com`, không thêm `/api`) và triển khai lại để frontend gọi đúng backend thay vì domain Vercel. Backend cho phép CORS credentials chỉ từ `CLIENT_ORIGIN`; cookie phiên production dùng `Secure; SameSite=None` để đăng nhập hoạt động giữa hai domain. Chỉ đặt URL công khai trong frontend; giữ URI MongoDB và các khóa API ở secret manager của backend.
+Cấu hình `NODE_ENV=production`, `CLIENT_ORIGIN` bằng chính xác origin frontend (ví dụ `https://loveforyoutest.vercel.app`), `MONGODB_URI`, `MONGODB_DB_NAME` và `PORT` trên Render. Vercel dùng `frontend/vercel.json` để chuyển tiếp `/api/*` tới backend, giữ request và cookie phiên cùng origin frontend; đặt **Root Directory** của dự án Vercel là `frontend` để nhận cấu hình rewrite. Không cần biến `VITE_API_URL` cho cách triển khai này. Backend vẫn cho phép CORS credentials từ `CLIENT_ORIGIN` và cookie production dùng `Secure; SameSite=None` nếu gọi backend trực tiếp. Không đặt URI MongoDB hoặc khóa API trong frontend.
+
+Nếu frontend không tải được dữ liệu, kiểm tra trong DevTools → Network rằng request phía trình duyệt đi tới `https://loveforyoutest.vercel.app/api/...`; Vercel chuyển tiếp nội bộ tới Render. Kiểm tra `https://loveforyoutest.onrender.com/api/health` trả `{"status":"ok"}` và `CLIENT_ORIGIN` trên Render khớp chính xác origin frontend. `GET /api/auth/me` trả `401` khi chưa đăng nhập là bình thường. Luồng này là frontend gọi backend rồi nhận response; backend không gọi ngược frontend để lấy dữ liệu.
 
 ## Phạm vi và giới hạn
 

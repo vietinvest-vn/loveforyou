@@ -864,6 +864,7 @@ export async function createApp({
     }
   }
 
+  app.options('/api/*', async (_request, reply) => reply.code(204).send())
   app.addHook('onRequest', async (request, reply) => {
     const origin = request.headers.origin
     if (typeof origin === 'string') {
