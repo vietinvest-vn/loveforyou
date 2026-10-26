@@ -353,8 +353,38 @@ export class ApiError extends Error {
   }
 }
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '')
+
+export function apiUrl(path: string) {
+  if (/^https?:\/\//i.test(path)) return path
+  const apiPath = path.startsWith('/api/') ? path.slice(4) : path.startsWith('/') ? path : `/${path}`
+  return `${API_BASE_URL}/api${apiPath}`
+}
+
+function parseResponseBody(text: string): unknown {
+  if (!text) return undefined
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
+}
+
+function responseErrorMessage(result: unknown, response: Response, text: string) {
+  if (result && typeof result === 'object') {
+    for (const field of ['error', 'message']) {
+      const message = Reflect.get(result, field)
+      if (typeof message === 'string' && message.trim()) return message
+    }
+  }
+  const plainText = text.trim()
+  if (plainText && !/^<!doctype html|^<html[\s>]/i.test(plainText)) return plainText
+  const statusText = response.statusText ? ` ${response.statusText}` : ''
+  return `Request failed (${response.status}${statusText}).`
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     credentials: 'include',
     headers: {
@@ -363,18 +393,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     },
   })
   if (response.status === 204) return undefined as T
-  let result: unknown
-  try {
-    result = await response.json()
-  } catch {
-    throw new ApiError('Invalid server response.', response.status)
-  }
+  const text = await response.text()
+  const result = parseResponseBody(text)
   if (!response.ok) {
-    const message = result && typeof result === 'object' && 'error' in result && typeof result.error === 'string'
-      ? result.error
-      : `Request failed (${response.status}).`
-    throw new ApiError(message, response.status)
+    throw new ApiError(responseErrorMessage(result, response, text), response.status)
   }
+  if (result === undefined) throw new ApiError('Invalid server response.', response.status)
   return result as T
 }
 
@@ -589,16 +613,10 @@ export const api = {
     if (filters.registeredFrom) query.set('registeredFrom', filters.registeredFrom)
     if (filters.registeredTo) query.set('registeredTo', filters.registeredTo)
     const suffix = query.size ? `?${query.toString()}` : ''
-    const response = await fetch(`/api/admin/users/export${suffix}`, { credentials: 'include' })
+    const response = await fetch(apiUrl(`/admin/users/export${suffix}`), { credentials: 'include' })
     if (!response.ok) {
-      let message = `Request failed (${response.status}).`
-      try {
-        const result: unknown = await response.json()
-        if (result && typeof result === 'object' && 'error' in result && typeof result.error === 'string') message = result.error
-      } catch {
-        throw new ApiError('Invalid server response.', response.status)
-      }
-      throw new ApiError(message, response.status)
+      const text = await response.text()
+      throw new ApiError(responseErrorMessage(parseResponseBody(text), response, text), response.status)
     }
     return response.blob()
   },

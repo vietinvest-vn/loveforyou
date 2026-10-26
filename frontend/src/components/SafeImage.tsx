@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { apiUrl } from '../apiClient'
 
 type SafeImageProps = {
   src?: string | null
@@ -9,9 +10,11 @@ type SafeImageProps = {
 }
 
 function withVariant(src: string, variant: SafeImageProps['variant']) {
-  if (!variant || variant === 'display' || !src.includes('/api/media/')) return src
-  const joiner = src.includes('?') ? '&' : '?'
-  return `${src}${joiner}variant=${encodeURIComponent(variant)}`
+  if (!src.includes('/api/media/')) return src
+  const imageUrl = !variant || variant === 'display'
+    ? src
+    : `${src}${src.includes('?') ? '&' : '?'}variant=${encodeURIComponent(variant)}`
+  return apiUrl(imageUrl)
 }
 
 export default function SafeImage({

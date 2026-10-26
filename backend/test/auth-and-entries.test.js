@@ -68,6 +68,41 @@ test('health check confirms MongoDB is reachable', async () => {
   assert.deepEqual(response.json(), { status: 'ok' })
 })
 
+test('cross-origin API requests allow credentials and preflight only for the configured client origin', async () => {
+  const preflight = await app.inject({
+    method: 'OPTIONS',
+    url: '/api/auth/login',
+    headers: {
+      origin,
+      'access-control-request-method': 'POST',
+      'access-control-request-headers': 'content-type,idempotency-key',
+    },
+  })
+  assert.equal(preflight.statusCode, 204)
+  assert.equal(preflight.headers['access-control-allow-origin'], origin)
+  assert.equal(preflight.headers['access-control-allow-credentials'], 'true')
+  assert.match(preflight.headers['access-control-allow-methods'], /POST/)
+  assert.match(preflight.headers['access-control-allow-headers'], /Content-Type/)
+  assert.match(preflight.headers['access-control-allow-headers'], /Idempotency-Key/)
+
+  const currentSession = await app.inject({
+    method: 'GET',
+    url: '/api/auth/me',
+    headers: { origin },
+  })
+  assert.equal(currentSession.statusCode, 401)
+  assert.equal(currentSession.headers['access-control-allow-origin'], origin)
+  assert.equal(currentSession.headers['access-control-allow-credentials'], 'true')
+
+  const deniedPreflight = await app.inject({
+    method: 'OPTIONS',
+    url: '/api/auth/login',
+    headers: { origin: 'https://untrusted.example', 'access-control-request-method': 'POST' },
+  })
+  assert.equal(deniedPreflight.statusCode, 204)
+  assert.equal(deniedPreflight.headers['access-control-allow-origin'], undefined)
+})
+
 test('wallet returns account-scoped balance and transaction totals', async () => {
   const anonymous = await app.inject({ method: 'GET', url: '/api/wallet' })
   assert.equal(anonymous.statusCode, 401)

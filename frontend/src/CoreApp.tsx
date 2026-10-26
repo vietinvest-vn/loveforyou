@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Activity, ArrowLeft, Bell, BookOpen, CalendarHeart, Crown, Flower2, Gift, Heart, HeartHandshake, House, Image as ImageIcon, ImagePlus, Mail, MailPlus, MessagesSquare, Sparkles, Star, UserRound, Wallet, X } from 'lucide-react'
-import { api, ApiError, type ApiChatMessage, type ApiConnection, type ApiEntry, type ApiLoveLevel, type ApiNotification, type ApiProfile, type ApiReceivedGift, type ApiUser } from './apiClient'
+import { api, apiUrl, ApiError, type ApiChatMessage, type ApiConnection, type ApiEntry, type ApiLoveLevel, type ApiNotification, type ApiProfile, type ApiReceivedGift, type ApiUser } from './apiClient'
 import { optimizeImage } from './utils/image'
 import { authModeFromPath, authPaths, isAdminPage, isKnownPagePath, landingPathForRole, pageFromPath, pagePaths, type Page } from './routing'
 import AuthGate from './components/auth/AuthGate'
@@ -361,8 +361,9 @@ function CoreApp() {
 
     const connect = () => {
       if (!active) return
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      socket = new WebSocket(`${protocol}//${window.location.host}/api/chat/socket`)
+      const socketUrl = new URL(apiUrl('/chat/socket'), window.location.href)
+      socketUrl.protocol = socketUrl.protocol === 'https:' ? 'wss:' : 'ws:'
+      socket = new WebSocket(socketUrl)
       socket.addEventListener('open', () => {
         reconnectDelay = 1_000
         void refreshChat()

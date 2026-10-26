@@ -11,7 +11,9 @@ npm install
 npm run dev
 ```
 
-Vite proxy `/api` đến Fastify ở `http://localhost:3000`. Hãy khởi động backend và MongoDB trước.
+Khi chạy local, Vite proxy `/api` đến Fastify ở `http://localhost:3000`. Hãy khởi động backend và MongoDB trước.
+
+Khi triển khai frontend và backend ở hai domain khác nhau, đặt biến môi trường build `VITE_API_URL` trên Vercel bằng **origin** backend (ví dụ `https://loveforyoutest.onrender.com`, không thêm `/api`), rồi build/deploy lại frontend. Frontend tự thêm tiền tố `/api`; nếu không đặt biến này, frontend dùng đường dẫn tương đối `/api` để hoạt động với Vite proxy local. Giá trị này là URL công khai, không chứa bí mật.
 
 Để kiểm tra trên điện thoại cùng mạng Wi-Fi, mở địa chỉ LAN của máy chạy Vite trong Chrome trên Android hoặc Safari trên iOS. Để cài như web app/PWA, triển khai qua HTTPS; dùng **Install app** trên Android hoặc **Share → Add to Home Screen** trên iOS.
 

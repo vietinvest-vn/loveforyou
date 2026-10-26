@@ -254,7 +254,7 @@ function setSessionCookie(reply, token, secureCookies, rememberMe = true) {
     path: '/',
     httpOnly: true,
     secure: secureCookies,
-    sameSite: 'lax',
+    sameSite: secureCookies ? 'none' : 'lax',
   }
   if (rememberMe) options.maxAge = SESSION_DAYS * 24 * 60 * 60
   reply.setCookie(COOKIE_NAME, token, options)
@@ -865,7 +865,19 @@ export async function createApp({
   }
 
   app.addHook('onRequest', async (request, reply) => {
-    if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return
+    const origin = request.headers.origin
+    if (typeof origin === 'string') {
+      reply.header('Vary', 'Origin')
+      if (isAllowedOrigin(origin, clientOrigin)) {
+        reply
+          .header('Access-Control-Allow-Origin', origin)
+          .header('Access-Control-Allow-Credentials', 'true')
+          .header('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS')
+          .header('Access-Control-Allow-Headers', 'Content-Type, Idempotency-Key')
+      }
+    }
+    if (request.method === 'OPTIONS') return reply.code(204).send()
+    if (['GET', 'HEAD'].includes(request.method)) return
     if (!isAllowedOrigin(request.headers.origin, clientOrigin)) {
       return reply.code(403).send({ error: 'Nguồn yêu cầu không được phép.' })
     }

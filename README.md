@@ -51,7 +51,7 @@ npm test
 
 ## Triển khai
 
-Cấu hình `NODE_ENV=production`, `CLIENT_ORIGIN=https://ten-mien-cua-ban`, `MONGODB_URI`, `MONGODB_DB_NAME` và `PORT`. Dùng MongoDB hỗ trợ transactions (chẳng hạn Atlas replica set), kết thúc HTTPS ở reverse proxy, chuyển `/api` đến Fastify và phục vụ frontend đã build dưới cùng origin. Backend từ chối `CLIENT_ORIGIN` không dùng HTTPS trong production và bật cookie `Secure`.
+Cấu hình `NODE_ENV=production`, `CLIENT_ORIGIN` bằng chính xác origin frontend (ví dụ `https://loveforyoutest.vercel.app`), `MONGODB_URI`, `MONGODB_DB_NAME` và `PORT` trên Render. Trên Vercel, đặt biến build `VITE_API_URL` bằng origin backend (ví dụ `https://loveforyoutest.onrender.com`, không thêm `/api`) và triển khai lại để frontend gọi đúng backend thay vì domain Vercel. Backend cho phép CORS credentials chỉ từ `CLIENT_ORIGIN`; cookie phiên production dùng `Secure; SameSite=None` để đăng nhập hoạt động giữa hai domain. Chỉ đặt URL công khai trong frontend; giữ URI MongoDB và các khóa API ở secret manager của backend.
 
 ## Phạm vi và giới hạn
 
